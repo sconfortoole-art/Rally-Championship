@@ -17,6 +17,7 @@
             margin: 0;
         }
         h1 { font-size: 20px; color: #00d2ff; margin-bottom: 10px; }
+        /* Box in cui apparirà la schermata di Windows 98 */
         #screen-container {
             width: 800px;
             height: 600px;
@@ -30,8 +31,8 @@
         }
         .controls { margin-top: 15px; font-size: 14px; color: #ccc; }
     </style>
-    <!-- Carichiamo l'emulatore v86 da un server globale stabile di pacchetti web -->
-    <script src="https://unpkg.com"></script>
+    <!-- Carichiamo il file del motore da un server CDN alternativo stabilissimo -->
+    <script src="https://jsdelivr.net"></script>
 </head>
 <body>
 
@@ -49,12 +50,13 @@
         const discoUrl = "https://google.com" + idDrive;
 
         var emulator = new V86Starter({
-            wasm_path: "https://unpkg.com",
+            // Collegamento al file WASM del server esterno funzionante
+            wasm_path: "https://jsdelivr.net",
             memory_size: 128 * 1024 * 1024, // 128MB di RAM virtuale
             vga_memory_size: 8 * 1024 * 1024, // 8MB di Memoria Video
             screen_container: document.getElementById("screen-container"),
-            bios: { url: "https://unpkg.com" },
-            vga_bios: { url: "https://unpkg.com" },
+            bios: { url: "https://jsdelivr.net" },
+            vga_bios: { url: "https://jsdelivr.net" },
             hda: { url: discoUrl }, // Carica il tuo hard disk virtuale da Google Drive
             autostart: true,
         });
