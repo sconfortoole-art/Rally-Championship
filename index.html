@@ -17,7 +17,6 @@
             margin: 0;
         }
         h1 { font-size: 20px; color: #00d2ff; margin-bottom: 10px; }
-        /* Box in cui apparirà la schermata di Windows 98 */
         #screen-container {
             width: 800px;
             height: 600px;
@@ -31,8 +30,15 @@
         }
         .controls { margin-top: 15px; font-size: 14px; color: #ccc; }
     </style>
-    <!-- Carichiamo il file del motore da un server CDN alternativo stabilissimo -->
-    <script src="https://jsdelivr.net"></script>
+    
+    <!-- Carichiamo il modulo dell'emulatore come script integrato a caricamento asincrono -->
+    <script type="module">
+        import { V86Starter } from "https://jsdelivr.net";
+        window.V86Starter = V86Starter;
+        
+        // Attiviamo l'emulatore solo dopo che il modulo è stato registrato globalmente
+        initEmulator();
+    </script>
 </head>
 <body>
 
@@ -45,21 +51,27 @@
     </div>
 
     <script>
-        // Configurato con il tuo ID reale di Google Drive!
-        const idDrive = "1L2YcHrQt9c2rQY284gy8CeGBXi41IPJa";
-        const discoUrl = "https://google.com" + idDrive;
+        function initEmulator() {
+            // Verifichiamo la presenza del motore prima di agganciare il disco
+            if (typeof V86Starter === "undefined") {
+                setTimeout(initEmulator, 100);
+                return;
+            }
 
-        var emulator = new V86Starter({
-            // Collegamento al file WASM del server esterno funzionante
-            wasm_path: "https://jsdelivr.net",
-            memory_size: 128 * 1024 * 1024, // 128MB di RAM virtuale
-            vga_memory_size: 8 * 1024 * 1024, // 8MB di Memoria Video
-            screen_container: document.getElementById("screen-container"),
-            bios: { url: "https://jsdelivr.net" },
-            vga_bios: { url: "https://jsdelivr.net" },
-            hda: { url: discoUrl }, // Carica il tuo hard disk virtuale da Google Drive
-            autostart: true,
-        });
+            const idDrive = "1L2YcHrQt9c2rQY284gy8CeGBXi41IPJa";
+            const discoUrl = "https://google.com" + idDrive;
+
+            var emulator = new V86Starter({
+                wasm_path: "https://jsdelivr.net",
+                memory_size: 128 * 1024 * 1024, 
+                vga_memory_size: 8 * 1024 * 1024, 
+                screen_container: document.getElementById("screen-container"),
+                bios: { url: "https://jsdelivr.net" },
+                vga_bios: { url: "https://jsdelivr.net" },
+                hda: { url: discoUrl }, 
+                autostart: true,
+            });
+        }
     </script>
 </body>
 </html>
