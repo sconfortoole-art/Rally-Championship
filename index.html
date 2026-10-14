@@ -30,15 +30,6 @@
         }
         .controls { margin-top: 15px; font-size: 14px; color: #ccc; }
     </style>
-    
-    <!-- Carichiamo il modulo dell'emulatore come script integrato a caricamento asincrono -->
-    <script type="module">
-        import { V86Starter } from "https://jsdelivr.net";
-        window.V86Starter = V86Starter;
-        
-        // Attiviamo l'emulatore solo dopo che il modulo è stato registrato globalmente
-        initEmulator();
-    </script>
 </head>
 <body>
 
@@ -50,11 +41,22 @@
         Fai clic nel riquadro per bloccare il mouse. Premi <b>Esc</b> per sbloccarlo.
     </div>
 
+    <!-- Usiamo il server unpkg al posto di jsDelivr per evitare i blocchi di connessione -->
+    <script defer src="https://unpkg.com"></script>
+
     <script>
-        function initEmulator() {
-            // Verifichiamo la presenza del motore prima di agganciare il disco
+        window.addEventListener("load", function() {
             if (typeof V86Starter === "undefined") {
-                setTimeout(initEmulator, 100);
+                console.log("In attesa del motore v86...");
+                setTimeout(startEngine, 1000);
+            } else {
+                startEngine();
+            }
+        });
+
+        function startEngine() {
+            if (typeof V86Starter === "undefined") {
+                setTimeout(startEngine, 500);
                 return;
             }
 
@@ -62,12 +64,12 @@
             const discoUrl = "https://google.com" + idDrive;
 
             var emulator = new V86Starter({
-                wasm_path: "https://jsdelivr.net",
+                wasm_path: "https://unpkg.com",
                 memory_size: 128 * 1024 * 1024, 
                 vga_memory_size: 8 * 1024 * 1024, 
                 screen_container: document.getElementById("screen-container"),
-                bios: { url: "https://jsdelivr.net" },
-                vga_bios: { url: "https://jsdelivr.net" },
+                bios: { url: "https://unpkg.com" },
+                vga_bios: { url: "https://unpkg.com" },
                 hda: { url: discoUrl }, 
                 autostart: true,
             });
