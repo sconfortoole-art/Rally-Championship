@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windows 98 & Rally Championship - Browser Edition</title>
+    <style>
+        body {
+            background-color: #222;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        h1 { font-size: 20px; color: #00d2ff; margin-bottom: 10px; }
+        /* Box in cui apparirà la schermata di Windows 98 */
+        #screen-container {
+            white-space: pre;
+            font-family: monospace;
+            line-height: 14px;
+            border: 5px solid #444;
+            background: black;
+        }
+        .controls { margin-top: 15px; font-size: 14px; color: #ccc; }
+    </style>
+    <!-- Carichiamo l'emulatore x86 WebAssembly puro -->
+    <script src="https://copy.sh"></script>
+</head>
+<body>
+
+    <h1>🖥️ La Mia Libreria: Windows 98 & Rally Championship</h1>
+    
+    <div id="screen-container"></div>
+
+    <div class="controls">
+        Fai clic nel riquadro per bloccare il mouse. Premi <b>Esc</b> per sbloccarlo.
+    </div>
+
+    <script>
+        // Sostituisci questo URL con il tuo link diretto di Google Drive generato prima!
+        // Ricorda di usare il formato di download diretto: https://google.com
+        const discoUrl = "INSERISCI_QUI_IL_TUO_LINK_DI_GOOGLE_DRIVE";
+
+        var emulator = new V86Starter({
+            wasm_path: "https://copy.sh",
+            memory_size: 128 * 1024 * 1024, // 128MB di RAM virtuale
+            vga_memory_size: 8 * 1024 * 1024, // 8MB di Memoria Video
+            screen_container: document.getElementById("screen-container"),
+            bios: { url: "https://copy.sh" },
+            vga_bios: { url: "https://copy.sh" },
+            hda: { url: discoUrl }, // Carica il tuo hard disk virtuale
+            autostart: true,
+        });
+    </script>
+</body>
+</html>
