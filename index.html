@@ -19,15 +19,19 @@
         h1 { font-size: 20px; color: #00d2ff; margin-bottom: 10px; }
         /* Box in cui apparirà la schermata di Windows 98 */
         #screen-container {
-            white-space: pre;
-            font-family: monospace;
-            line-height: 14px;
+            width: 800px;
+            height: 600px;
             border: 5px solid #444;
             background: black;
         }
+        #screen-container canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
         .controls { margin-top: 15px; font-size: 14px; color: #ccc; }
     </style>
-    <!-- Carichiamo l'emulatore x86 WebAssembly puro -->
+    <!-- Carichiamo l'emulatore x86 WebAssembly stabile -->
     <script src="https://copy.sh"></script>
 </head>
 <body>
@@ -41,9 +45,9 @@
     </div>
 
     <script>
-        // Sostituisci questo URL con il tuo link diretto di Google Drive generato prima!
-        // Ricorda di usare il formato di download diretto: https://google.com
-        const discoUrl = "INSERISCI_QUI_IL_TUO_LINK_DI_GOOGLE_DRIVE";
+        // Configurato con il tuo ID reale di Google Drive!
+        const idDrive = "1L2YcHrQt9c2rQY284gy8CeGBXi41IPJa";
+        const discoUrl = "https://google.com" + idDrive;
 
         var emulator = new V86Starter({
             wasm_path: "https://copy.sh",
@@ -52,7 +56,7 @@
             screen_container: document.getElementById("screen-container"),
             bios: { url: "https://copy.sh" },
             vga_bios: { url: "https://copy.sh" },
-            hda: { url: discoUrl }, // Carica il tuo hard disk virtuale
+            hda: { url: discoUrl }, // Carica il tuo hard disk virtuale da Google Drive
             autostart: true,
         });
     </script>
