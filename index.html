@@ -81,7 +81,7 @@
     <div id="statusMessage" class="status">In attesa dell'avvio...</div>
 
     <div id="screen-container">
-        <!-- Canvas principale per l'output video Direct3D/WebGL -->
+        <!-- Canvas principale su cui il motore scriverà i dati video -->
         <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
     </div>
 
@@ -89,8 +89,8 @@
         Fai clic nel riquadro per bloccare il mouse. Premi <b>Esc</b> per sbloccarlo.
     </div>
 
-    <!-- Script stabile della versione embedded di Boxedwine -->
-    <script src="https://unpkg.com"></script>
+    <!-- Carichiamo il file di controllo locale che hai appena caricato su GitHub -->
+    <script src="boxedwine.js"></script>
 
     <script>
         const btnStart = document.getElementById('btnStart');
@@ -98,19 +98,21 @@
 
         btnStart.addEventListener('click', function() {
             btnStart.disabled = true;
-            statusMessage.innerText = "Download di Mobil 1 Rally in corso (517 MB)... Attendere l'estrazione.";
+            statusMessage.innerText = "Download di Mobil 1 Rally (517 MB) ed estrazione in corso...";
 
-            // IMPORTANTE: Sostituisci questo URL con l'indirizzo reale copiato dalle tue GitHub Releases
+            // RICORDATI: Sostituisci questo URL con il link REALE delle tue GitHub Releases
             const giocoUrl = "https://github.com";
 
             var ConfigBoxedwine = {
-                wasm_path: "https://unpkg.com",
-                canvas: document.getElementById("canvas"),
-                root: "https://unpkg.com", 
-                app: giocoUrl,
-                p: "d:/ral.exe", 
+                // Impostiamo i percorsi locali dei file che hai appena caricato nella cartella principale
+                wasm_path: "boxedwine.wasm",
+                root: "boxedwine.zip", 
                 
-                // Allocazione memoria per gestire l'archivio da 517MB in RAM
+                canvas: document.getElementById("canvas"),
+                app: giocoUrl,
+                p: "d:/ral.exe", // Avvia l'eseguibile corretto
+                
+                // Configurazione memoria per gestire il pacchetto da 517MB in RAM
                 memory_size: 512 * 1024 * 1024, 
                 vga_memory_size: 32 * 1024 * 1024,
                 use_webgl: true, 
@@ -124,13 +126,11 @@
                 }
             };
 
-            // Sistema di avvio combinato per massima compatibilità
-            if (typeof BoxedwineEmbedded !== "undefined") {
-                BoxedwineEmbedded.start(ConfigBoxedwine);
-            } else if (typeof Boxedwine !== "undefined") {
+            // Avvio sicuro tramite il motore locale
+            if (typeof Boxedwine !== "undefined") {
                 Boxedwine.start(ConfigBoxedwine);
             } else {
-                statusMessage.innerText = "Errore: Inizializzazione del motore WebAssembly fallita.";
+                statusMessage.innerText = "Errore critico: Il file boxedwine.js non è stato caricato correttamente.";
                 btnStart.disabled = false;
             }
         });
