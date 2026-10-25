@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mobil 1 Rally Championship (1999) - Browser Edition</title>
+    <title>Mobil 1 Rally Championship (1999) - Browser Edition v1.0.3</title>
     <style>
         body {
             background-color: #1a1a1a;
@@ -46,11 +46,11 @@
 </head>
 <body>
 
-    <h1>🏁 La Mia Libreria: Mobil 1 Rally Championship (1999)</h1>
+    <h1>🏁 La Mia Libreria: Mobil 1 Rally Championship (1999) - Build v1.0.3</h1>
     <p>Esecuzione nativa tramite WebAssembly & WebGL</p>
     
     <button class="btn-avvia" id="btnStart">AVVIA GIOCO</button>
-    <div id="statusMessage" class="status">In attesa dell'avvio...</div>
+    <div id="statusMessage" class="status">In attesa dell'avvio manuale...</div>
 
     <div id="screen-container">
         <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
@@ -60,12 +60,9 @@
         Fai clic nel riquadro per bloccare il mouse. Premi <b>Esc</b> per sbloccarlo.
     </div>
 
-    <!-- SBLOCCO CRITICO: Iniettiamo l'architettura core di controllo direttamente in linea -->
     <script>
-        // Inizializzazione globale richiesta dall'ambiente Emscripten di Boxedwine
         var Module = typeof Module !== "undefined" ? Module : {};
         
-        // Struttura di sblocco e configurazione del runtime
         var Boxedwine = (function() {
             var initialized = false;
             return {
@@ -73,73 +70,56 @@
                     if (initialized) return;
                     initialized = true;
                     
-                    // Configurazione dei parametri minimi per agganciare il file WASM e l'output canvas
                     Module = {
                         canvas: config.canvas,
-                        arguments: ["-root", "boxedwine.zip", "-app", config.app, config.p],
-                        print: function(text) { console.log(text); },
-                        printErr: function(text) { console.error(text); },
+                        // MODIFICA 1: Aggiungiamo i flag "- ogl" e "- wgl" per forzare l'accelerazione 3D hardware nel core di Wine
+                        arguments: ["-root", "boxedwine.zip", "-app", config.app, "-ogl", "1", "-wgl", "1", config.p],
+                        print: function(text) { console.log("Boxedwine Log: " + text); },
+                        printErr: function(text) { console.error("Boxedwine Error: " + text); },
                         locateFile: function(path) {
                             if (path.endsWith(".wasm")) return config.wasm_path;
                             return path;
                         },
                         onRuntimeInitialized: function() {
                             if (config.onLaunch) config.onLaunch();
-                        },
-                        setStatus: function(text) {
-                            console.log("Status: " + text);
                         }
                     };
 
-                    // Caricamento asincrono dinamico del core binario per prevenire i blocchi MIME di GitHub
-                    var scriptWasm = document.createElement("script");
-                    // Sfruttiamo un caricatore asincrono standard compatibile con gl4es
-                    scriptWasm.src = "https://jsdelivr.net";
-                    scriptWasm.onerror = function() {
-                        // Se il CDN fallisce, tenta l'esecuzione tramite la memoria interna allocata
-                        var xhr = new XMLHttpRequest();
-                        xhr.open("GET", config.wasm_path, true);
-                        xhr.responseType = "arraybuffer";
-                        xhr.onload = function() {
-                            Module.wasmBinary = xhr.response;
-                            var localScript = document.createElement("script");
-                            localScript.src = "boxedwine.js";
-                            document.body.appendChild(localScript);
-                        };
-                        xhr.send();
+                    var xhr = new XMLHttpRequest();
+                    xhr.open("GET", config.wasm_path, true);
+                    xhr.responseType = "arraybuffer";
+                    xhr.onload = function() {
+                        Module.wasmBinary = xhr.response;
+                        var s = document.createElement("script");
+                        s.src = "https://jsdelivr.net";
+                        document.body.appendChild(s);
                     };
-                    document.body.appendChild(scriptWasm);
+                    xhr.send();
                 }
             };
         })();
 
-        // Logica del pulsante di avvio
         const btnStart = document.getElementById('btnStart');
         const statusMessage = document.getElementById('statusMessage');
 
         btnStart.addEventListener('click', function() {
             btnStart.disabled = true;
-            statusMessage.innerText = "Inizializzazione del motore e download del gioco (517 MB) in corso...";
+            statusMessage.innerText = "Inizializzazione del motore e avvio download del gioco (517 MB)...";
 
-            // MODIFICA QUI: Metti il link della tua release di GitHub al posto di questo esempio
+            // INSERISCI IL TUO LINK DI GITHUB RELEASES REALE
             const giocoUrl = "https://github.com";
 
             var ConfigBoxedwine = {
-                wasm_path: "boxedwine.wasm", // Legge il file locale caricato nella repository
+                wasm_path: "boxedwine.wasm", 
                 canvas: document.getElementById("canvas"),
                 app: giocoUrl,
-                p: "d:/ral.exe",
-                
-                onLaunch: function() {
-                    statusMessage.innerText = "Gioco avviato! Fai clic sullo schermo per giocare.";
-                }
+                p: "d:/ral.exe"
             };
 
-            // Eseguiamo il motore unificato
             try {
                 Boxedwine.start(ConfigBoxedwine);
             } catch (e) {
-                statusMessage.innerText = "Eccezione durante il caricamento: " + e.message;
+                statusMessage.innerText = "Eccezione: " + e.message;
                 btnStart.disabled = false;
             }
         });
