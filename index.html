@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Windows 98 & Rally Championship - Browser Edition</title>
+    <title>Mobil 1 Rally Championship (1999) - Browser Edition</title>
     <style>
         body {
-            background-color: #222;
+            background-color: #1a1a1a;
             color: white;
             font-family: Arial, sans-serif;
             display: flex;
@@ -16,64 +16,131 @@
             height: 100vh;
             margin: 0;
         }
-        h1 { font-size: 20px; color: #00d2ff; margin-bottom: 10px; }
+        h1 { 
+            font-size: 22px; 
+            color: #00d2ff; 
+            margin-bottom: 5px; 
+        }
+        p {
+            color: #aaa;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
         #screen-container {
             width: 800px;
             height: 600px;
             border: 5px solid #444;
             background: black;
+            border-radius: 4px;
         }
-        #screen-container canvas {
+        #canvas {
             display: block;
             width: 100%;
             height: 100%;
         }
-        .controls { margin-top: 15px; font-size: 14px; color: #ccc; }
+        .btn-avvia {
+            background: linear-gradient(135deg, #00d2ff 0%, #0072ff 100%);
+            border: none;
+            color: white;
+            padding: 10px 25px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-bottom: 15px;
+        }
+        .btn-avvia:hover {
+            transform: translateY(-2px);
+        }
+        .btn-avvia:disabled {
+            background: #444;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .controls { 
+            margin-top: 15px; 
+            font-size: 14px; 
+            color: #ccc; 
+        }
+        .status {
+            font-size: 13px;
+            color: #00ffcc;
+            margin-bottom: 10px;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
 
-    <h1>🖥️ La Mia Libreria: Windows 98 & Rally Championship</h1>
+    <h1>🏁 La Mia Libreria: Mobil 1 Rally Championship (1999)</h1>
+    <p>Esecuzione nativa tramite WebAssembly & WebGL</p>
     
-    <div id="screen-container"></div>
+    <button class="btn-avvia" id="btnStart">AVVIA GIOCO</button>
+    <div id="statusMessage" class="status">In attesa dell'avvio...</div>
+
+    <div id="screen-container">
+        <!-- Boxedwine richiede un elemento canvas per l'output video Direct3D/WebGL -->
+        <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+    </div>
 
     <div class="controls">
         Fai clic nel riquadro per bloccare il mouse. Premi <b>Esc</b> per sbloccarlo.
     </div>
 
-    <!-- Usiamo il server unpkg al posto di jsDelivr per evitare i blocchi di connessione -->
-    <script defer src="https://unpkg.com"></script>
+    <!-- Carichiamo lo script core di Boxedwine tramite CDN unpkg -->
+    <script src="https://unpkg.com"></script>
 
     <script>
-        window.addEventListener("load", function() {
-            if (typeof V86Starter === "undefined") {
-                console.log("In attesa del motore v86...");
-                setTimeout(startEngine, 1000);
+        const btnStart = document.getElementById('btnStart');
+        const statusMessage = document.getElementById('statusMessage');
+
+        btnStart.addEventListener('click', function() {
+            btnStart.disabled = true;
+            statusMessage.innerText = "Download del gioco in RAM (517 MB) ed estrazione in corso... Attendere.";
+
+            // IMPORTANTE: Sostituisci questo URL di esempio con il link reale che hai copiato dalle tue GitHub Releases
+            const giocoUrl = "https://github.com";
+
+            var ConfigBoxedwine = {
+                // Configurazione dei percorsi del motore WebAssembly su unpkg
+                wasm_path: "https://unpkg.com",
+                canvas: document.getElementById("canvas"),
+                
+                // Ambiente pre-configurato di Wine per l'interpretazione dei comandi Windows
+                root: "https://unpkg.com", 
+                
+                // Mappiamo l'archivio del gioco caricato su GitHub
+                app: giocoUrl,
+                
+                // Indichiamo l'eseguibile esatto da avviare presente all'interno dello zip
+                p: "d:/ral.exe", 
+                
+                // Ottimizzazione allocazione RAM virtuale del browser per gestire il pacchetto da 517MB
+                memory_size: 512 * 1024 * 1024, 
+                vga_memory_size: 32 * 1024 * 1024,
+                
+                // Forza l'uso della scheda video locale del PC tramite WebGL
+                use_webgl: true, 
+                
+                onLaunch: function() {
+                    statusMessage.innerText = "Gioco avviato! Fai clic sullo schermo per giocare.";
+                },
+                onError: function(err) {
+                    statusMessage.innerText = "Errore durante l'avvio: " + err;
+                    btnStart.disabled = false;
+                }
+            };
+
+            // Esecuzione definitiva del motore
+            if (typeof Boxedwine !== "undefined") {
+                Boxedwine.start(ConfigBoxedwine);
             } else {
-                startEngine();
+                statusMessage.innerText = "Errore: Libreria Boxedwine non raggiungibile.";
+                btnStart.disabled = false;
             }
         });
-
-        function startEngine() {
-            if (typeof V86Starter === "undefined") {
-                setTimeout(startEngine, 500);
-                return;
-            }
-
-            const idDrive = "1L2YcHrQt9c2rQY284gy8CeGBXi41IPJa";
-            const discoUrl = "https://google.com" + idDrive;
-
-            var emulator = new V86Starter({
-                wasm_path: "https://unpkg.com",
-                memory_size: 128 * 1024 * 1024, 
-                vga_memory_size: 8 * 1024 * 1024, 
-                screen_container: document.getElementById("screen-container"),
-                bios: { url: "https://unpkg.com" },
-                vga_bios: { url: "https://unpkg.com" },
-                hda: { url: discoUrl }, 
-                autostart: true,
-            });
-        }
     </script>
 </body>
 </html>
