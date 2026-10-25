@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mobil 1 Rally Championship (1999) - Browser Edition v1.0.3</title>
+    <title>Mobil 1 Rally Championship (1999) - Browser Edition v1.0.4</title>
     <style>
         body {
             background-color: #1a1a1a;
@@ -46,7 +46,7 @@
 </head>
 <body>
 
-    <h1>🏁 La Mia Libreria: Mobil 1 Rally Championship (1999) - Build v1.0.3</h1>
+    <h1>🏁 La Mia Libreria: Mobil 1 Rally Championship (1999) - Build v1.0.4</h1>
     <p>Esecuzione nativa tramite WebAssembly & WebGL</p>
     
     <button class="btn-avvia" id="btnStart">AVVIA GIOCO</button>
@@ -70,10 +70,16 @@
                     if (initialized) return;
                     initialized = true;
                     
+                    // CORREZIONE 2: Riscrittura pulita dei comandi passati a Emscripten
+                    // Passiamo i parametri esattamente nell'ordine previsto senza spezzarli
                     Module = {
                         canvas: config.canvas,
-                        // MODIFICA 1: Aggiungiamo i flag "- ogl" e "- wgl" per forzare l'accelerazione 3D hardware nel core di Wine
-                        arguments: ["-root", "boxedwine.zip", "-app", config.app, "-ogl", "1", "-wgl", "1", config.p],
+                        arguments: [
+                            "-root", "boxedwine.zip", 
+                            "-app", config.app, 
+                            "-hda", "d", 
+                            "d:/ral.exe"
+                        ],
                         print: function(text) { console.log("Boxedwine Log: " + text); },
                         printErr: function(text) { console.error("Boxedwine Error: " + text); },
                         locateFile: function(path) {
@@ -85,16 +91,14 @@
                         }
                     };
 
-                    var xhr = new XMLHttpRequest();
-                    xhr.open("GET", config.wasm_path, true);
-                    xhr.responseType = "arraybuffer";
-                    xhr.onload = function() {
-                        Module.wasmBinary = xhr.response;
-                        var s = document.createElement("script");
-                        s.src = "https://jsdelivr.net";
-                        document.body.appendChild(s);
+                    // CORREZIONE 1: Carichiamo il file "boxedwine.js" locale che hai scaricato,
+                    // senza effettuare chiamate esterne a jsDelivr o altri CDN che vanno in timeout
+                    var localScript = document.createElement("script");
+                    localScript.src = "boxedwine.js";
+                    localScript.onerror = function() {
+                        statusMessage.innerText = "Errore nel caricamento del file locale boxedwine.js";
                     };
-                    xhr.send();
+                    document.body.appendChild(localScript);
                 }
             };
         })();
@@ -106,14 +110,13 @@
             btnStart.disabled = true;
             statusMessage.innerText = "Inizializzazione del motore e avvio download del gioco (517 MB)...";
 
-            // INSERISCI IL TUO LINK DI GITHUB RELEASES REALE
+            // Sostituisci questo URL con il link REALE e COMPLETO delle tue GitHub Releases
             const giocoUrl = "https://github.com";
 
             var ConfigBoxedwine = {
                 wasm_path: "boxedwine.wasm", 
                 canvas: document.getElementById("canvas"),
-                app: giocoUrl,
-                p: "d:/ral.exe"
+                app: giocoUrl
             };
 
             try {
