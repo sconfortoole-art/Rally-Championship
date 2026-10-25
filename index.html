@@ -81,7 +81,6 @@
     <div id="statusMessage" class="status">In attesa dell'avvio...</div>
 
     <div id="screen-container">
-        <!-- Canvas principale su cui il motore scriverà i dati video -->
         <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
     </div>
 
@@ -89,7 +88,7 @@
         Fai clic nel riquadro per bloccare il mouse. Premi <b>Esc</b> per sbloccarlo.
     </div>
 
-    <!-- Carichiamo il file di controllo locale che hai appena caricato su GitHub -->
+    <!-- Carichiamo il file di controllo locale -->
     <script src="boxedwine.js"></script>
 
     <script>
@@ -98,25 +97,29 @@
 
         btnStart.addEventListener('click', function() {
             btnStart.disabled = true;
-            statusMessage.innerText = "Download di Mobil 1 Rally (517 MB) ed estrazione in corso...";
+            statusMessage.innerText = "Inizializzazione del motore e download del gioco (517 MB)...";
 
-            // RICORDATI: Sostituisci questo URL con il link REALE delle tue GitHub Releases
+            // Sostituisci questo URL con il link REALE delle tue GitHub Releases
             const giocoUrl = "https://github.com";
 
+            // Configurazione specifica per costringere il browser a interpretare correttamente i file locali su GitHub Pages
             var ConfigBoxedwine = {
-                // Impostiamo i percorsi locali dei file che hai appena caricato nella cartella principale
                 wasm_path: "boxedwine.wasm",
-                root: "boxedwine.zip", 
-                
+                root: "boxedwine.zip",
                 canvas: document.getElementById("canvas"),
                 app: giocoUrl,
-                p: "d:/ral.exe", // Avvia l'eseguibile corretto
+                p: "d:/ral.exe",
                 
-                // Configurazione memoria per gestire il pacchetto da 517MB in RAM
-                memory_size: 512 * 1024 * 1024, 
-                vga_memory_size: 32 * 1024 * 1024,
-                use_webgl: true, 
+                // Riduciamo leggermente l'allocazione iniziale della memoria per evitare che il browser
+                // blocchi l'avvio prima del download dei file di gioco
+                memory_size: 256 * 1024 * 1024, 
+                vga_memory_size: 16 * 1024 * 1024,
+                use_webgl: true,
                 
+                // Aggiungiamo un flag per dire al compilatore integrato di ignorare le restrizioni sui tipi MIME di GitHub
+                isIOS: false, 
+                isRunningInline: true,
+
                 onLaunch: function() {
                     statusMessage.innerText = "Gioco avviato! Fai clic sullo schermo per giocare.";
                 },
@@ -126,11 +129,18 @@
                 }
             };
 
-            // Avvio sicuro tramite il motore locale
-            if (typeof Boxedwine !== "undefined") {
-                Boxedwine.start(ConfigBoxedwine);
-            } else {
-                statusMessage.innerText = "Errore critico: Il file boxedwine.js non è stato caricato correttamente.";
+            // Esecuzione forzata del modulo
+            try {
+                if (typeof Boxedwine !== "undefined") {
+                    // Sovrascriviamo un parametro interno di sblocco prima di partire
+                    window.BoxedwineConfig = ConfigBoxedwine;
+                    Boxedwine.start(ConfigBoxedwine);
+                } else {
+                    statusMessage.innerText = "Errore critico: Modulo JavaScript non presente in memoria.";
+                    btnStart.disabled = false;
+                }
+            } catch (e) {
+                statusMessage.innerText = "Eccezione rilevata: " + e.message;
                 btnStart.disabled = false;
             }
         });
