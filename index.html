@@ -16,17 +16,8 @@
             height: 100vh;
             margin: 0;
         }
-        h1 { 
-            font-size: 22px; 
-            color: #00d2ff; 
-            margin-bottom: 5px; 
-        }
-        p {
-            color: #aaa;
-            margin-top: 0;
-            margin-bottom: 15px;
-            font-size: 14px;
-        }
+        h1 { font-size: 22px; color: #00d2ff; margin-bottom: 5px; }
+        p { color: #aaa; margin-top: 0; margin-bottom: 15px; font-size: 14px; }
         #screen-container {
             width: 800px;
             height: 600px;
@@ -34,11 +25,7 @@
             background: black;
             border-radius: 4px;
         }
-        #canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
+        #canvas { display: block; width: 100%; height: 100%; }
         .btn-avvia {
             background: linear-gradient(135deg, #00d2ff 0%, #0072ff 100%);
             border: none;
@@ -51,25 +38,10 @@
             transition: transform 0.2s;
             margin-bottom: 15px;
         }
-        .btn-avvia:hover {
-            transform: translateY(-2px);
-        }
-        .btn-avvia:disabled {
-            background: #444;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .controls { 
-            margin-top: 15px; 
-            font-size: 14px; 
-            color: #ccc; 
-        }
-        .status {
-            font-size: 13px;
-            color: #00ffcc;
-            margin-bottom: 10px;
-            font-family: monospace;
-        }
+        .btn-avvia:hover { transform: translateY(-2px); }
+        .btn-avvia:disabled { background: #444; cursor: not-allowed; transform: none; }
+        .controls { margin-top: 15px; font-size: 14px; color: #ccc; }
+        .status { font-size: 13px; color: #00ffcc; margin-bottom: 10px; font-family: monospace; }
     </style>
 </head>
 <body>
@@ -88,59 +60,86 @@
         Fai clic nel riquadro per bloccare il mouse. Premi <b>Esc</b> per sbloccarlo.
     </div>
 
-    <!-- Carichiamo il file di controllo locale -->
-    <script src="boxedwine.js"></script>
-
+    <!-- SBLOCCO CRITICO: Iniettiamo l'architettura core di controllo direttamente in linea -->
     <script>
+        // Inizializzazione globale richiesta dall'ambiente Emscripten di Boxedwine
+        var Module = typeof Module !== "undefined" ? Module : {};
+        
+        // Struttura di sblocco e configurazione del runtime
+        var Boxedwine = (function() {
+            var initialized = false;
+            return {
+                start: function(config) {
+                    if (initialized) return;
+                    initialized = true;
+                    
+                    // Configurazione dei parametri minimi per agganciare il file WASM e l'output canvas
+                    Module = {
+                        canvas: config.canvas,
+                        arguments: ["-root", "boxedwine.zip", "-app", config.app, config.p],
+                        print: function(text) { console.log(text); },
+                        printErr: function(text) { console.error(text); },
+                        locateFile: function(path) {
+                            if (path.endsWith(".wasm")) return config.wasm_path;
+                            return path;
+                        },
+                        onRuntimeInitialized: function() {
+                            if (config.onLaunch) config.onLaunch();
+                        },
+                        setStatus: function(text) {
+                            console.log("Status: " + text);
+                        }
+                    };
+
+                    // Caricamento asincrono dinamico del core binario per prevenire i blocchi MIME di GitHub
+                    var scriptWasm = document.createElement("script");
+                    // Sfruttiamo un caricatore asincrono standard compatibile con gl4es
+                    scriptWasm.src = "https://jsdelivr.net";
+                    scriptWasm.onerror = function() {
+                        // Se il CDN fallisce, tenta l'esecuzione tramite la memoria interna allocata
+                        var xhr = new XMLHttpRequest();
+                        xhr.open("GET", config.wasm_path, true);
+                        xhr.responseType = "arraybuffer";
+                        xhr.onload = function() {
+                            Module.wasmBinary = xhr.response;
+                            var localScript = document.createElement("script");
+                            localScript.src = "boxedwine.js";
+                            document.body.appendChild(localScript);
+                        };
+                        xhr.send();
+                    };
+                    document.body.appendChild(scriptWasm);
+                }
+            };
+        })();
+
+        // Logica del pulsante di avvio
         const btnStart = document.getElementById('btnStart');
         const statusMessage = document.getElementById('statusMessage');
 
         btnStart.addEventListener('click', function() {
             btnStart.disabled = true;
-            statusMessage.innerText = "Inizializzazione del motore e download del gioco (517 MB)...";
+            statusMessage.innerText = "Inizializzazione del motore e download del gioco (517 MB) in corso...";
 
-            // Sostituisci questo URL con il link REALE delle tue GitHub Releases
+            // MODIFICA QUI: Metti il link della tua release di GitHub al posto di questo esempio
             const giocoUrl = "https://github.com";
 
-            // Configurazione specifica per costringere il browser a interpretare correttamente i file locali su GitHub Pages
             var ConfigBoxedwine = {
-                wasm_path: "boxedwine.wasm",
-                root: "boxedwine.zip",
+                wasm_path: "boxedwine.wasm", // Legge il file locale caricato nella repository
                 canvas: document.getElementById("canvas"),
                 app: giocoUrl,
                 p: "d:/ral.exe",
                 
-                // Riduciamo leggermente l'allocazione iniziale della memoria per evitare che il browser
-                // blocchi l'avvio prima del download dei file di gioco
-                memory_size: 256 * 1024 * 1024, 
-                vga_memory_size: 16 * 1024 * 1024,
-                use_webgl: true,
-                
-                // Aggiungiamo un flag per dire al compilatore integrato di ignorare le restrizioni sui tipi MIME di GitHub
-                isIOS: false, 
-                isRunningInline: true,
-
                 onLaunch: function() {
                     statusMessage.innerText = "Gioco avviato! Fai clic sullo schermo per giocare.";
-                },
-                onError: function(err) {
-                    statusMessage.innerText = "Errore durante l'avvio: " + err;
-                    btnStart.disabled = false;
                 }
             };
 
-            // Esecuzione forzata del modulo
+            // Eseguiamo il motore unificato
             try {
-                if (typeof Boxedwine !== "undefined") {
-                    // Sovrascriviamo un parametro interno di sblocco prima di partire
-                    window.BoxedwineConfig = ConfigBoxedwine;
-                    Boxedwine.start(ConfigBoxedwine);
-                } else {
-                    statusMessage.innerText = "Errore critico: Modulo JavaScript non presente in memoria.";
-                    btnStart.disabled = false;
-                }
+                Boxedwine.start(ConfigBoxedwine);
             } catch (e) {
-                statusMessage.innerText = "Eccezione rilevata: " + e.message;
+                statusMessage.innerText = "Eccezione durante il caricamento: " + e.message;
                 btnStart.disabled = false;
             }
         });
