@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mobil 1 Rally Championship (1999) - Browser Edition v1.0.4</title>
+    <title>Mobil 1 Rally Championship (1999) - Browser Edition v1.0.5</title>
     <style>
         body {
             background-color: #1a1a1a;
@@ -46,7 +46,7 @@
 </head>
 <body>
 
-    <h1>🏁 La Mia Libreria: Mobil 1 Rally Championship (1999) - Build v1.0.4</h1>
+    <h1>🏁 La Mia Libreria: Mobil 1 Rally Championship (1999) - Build v1.0.5</h1>
     <p>Esecuzione nativa tramite WebAssembly & WebGL</p>
     
     <button class="btn-avvia" id="btnStart">AVVIA GIOCO</button>
@@ -60,69 +60,54 @@
         Fai clic nel riquadro per bloccare il mouse. Premi <b>Esc</b> per sbloccarlo.
     </div>
 
+    <!-- SBLOCCO CORS: Carichiamo prima il file JS locale in modo standard e lineare -->
+    <script src="boxedwine.js"></script>
+
     <script>
-        var Module = typeof Module !== "undefined" ? Module : {};
-        
-        var Boxedwine = (function() {
-            var initialized = false;
-            return {
-                start: function(config) {
-                    if (initialized) return;
-                    initialized = true;
-                    
-                    // CORREZIONE 2: Riscrittura pulita dei comandi passati a Emscripten
-                    // Passiamo i parametri esattamente nell'ordine previsto senza spezzarli
-                    Module = {
-                        canvas: config.canvas,
-                        arguments: [
-                            "-root", "boxedwine.zip", 
-                            "-app", config.app, 
-                            "-hda", "d", 
-                            "d:/ral.exe"
-                        ],
-                        print: function(text) { console.log("Boxedwine Log: " + text); },
-                        printErr: function(text) { console.error("Boxedwine Error: " + text); },
-                        locateFile: function(path) {
-                            if (path.endsWith(".wasm")) return config.wasm_path;
-                            return path;
-                        },
-                        onRuntimeInitialized: function() {
-                            if (config.onLaunch) config.onLaunch();
-                        }
-                    };
-
-                    // CORREZIONE 1: Carichiamo il file "boxedwine.js" locale che hai scaricato,
-                    // senza effettuare chiamate esterne a jsDelivr o altri CDN che vanno in timeout
-                    var localScript = document.createElement("script");
-                    localScript.src = "boxedwine.js";
-                    localScript.onerror = function() {
-                        statusMessage.innerText = "Errore nel caricamento del file locale boxedwine.js";
-                    };
-                    document.body.appendChild(localScript);
-                }
-            };
-        })();
-
         const btnStart = document.getElementById('btnStart');
         const statusMessage = document.getElementById('statusMessage');
 
         btnStart.addEventListener('click', function() {
             btnStart.disabled = true;
-            statusMessage.innerText = "Inizializzazione del motore e avvio download del gioco (517 MB)...";
+            statusMessage.innerText = "Inizializzazione dei moduli e avvio del download (517 MB)...";
 
-            // Sostituisci questo URL con il link REALE e COMPLETO delle tue GitHub Releases
+            // Sostituisci questo URL con il link REALE delle tue GitHub Releases
             const giocoUrl = "https://github.com";
 
+            // Configurazione della sandbox Emscripten isolata
             var ConfigBoxedwine = {
                 wasm_path: "boxedwine.wasm", 
                 canvas: document.getElementById("canvas"),
-                app: giocoUrl
+                app: giocoUrl,
+                p: "d:/ral.exe"
             };
 
+            // Agganciamo i parametri direttamente all'oggetto globale prima dell'esecuzione del binario
+            window.BoxedwineConfig = ConfigBoxedwine;
+
+            // Sovrascriviamo l'inizializzazione del File System per impedire a boxedwine.js 
+            // di effettuare chiamate esterne verso jsdelivr
+            if (typeof Module !== "undefined") {
+                Module.canvas = ConfigBoxedwine.canvas;
+                Module.arguments = ["-root", "boxedwine.zip", "-app", ConfigBoxedwine.app, "-hda", "d", "d:/ral.exe"];
+                Module.locateFile = function(path) {
+                    if (path.endsWith(".wasm")) return "boxedwine.wasm";
+                    return path;
+                };
+            }
+
             try {
-                Boxedwine.start(ConfigBoxedwine);
+                // Avvio diretto saltando i controlli di rete remoti
+                if (typeof Boxedwine !== "undefined" && typeof Boxedwine.start === "function") {
+                    Boxedwine.start(ConfigBoxedwine);
+                } else if (typeof Module.run === "function") {
+                    Module.run();
+                } else {
+                    // Se la libreria richiede forzatamente l'altro file, lo indichiamo nello stato
+                    statusMessage.innerText = "Caricamento core avviato. Controlla la console (F12) per verificare i log.";
+                }
             } catch (e) {
-                statusMessage.innerText = "Eccezione: " + e.message;
+                statusMessage.innerText = "Eccezione rilevata: " + e.message;
                 btnStart.disabled = false;
             }
         });
